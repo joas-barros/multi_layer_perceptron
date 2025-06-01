@@ -1,4 +1,4 @@
-from activation_functions import *
+from util.activation_functions import *
 
 def sigmoid_derivative(x):
     """
@@ -35,5 +35,4 @@ def tanh_derivative(x):
     Returns:
     float or np.ndarray: The derivative of the tanh function evaluated at x.
     """
-    tanh = tanh(x)
     return 1 - tanh(x) ** 2
