@@ -1,26 +1,73 @@
 import numpy as np
 from util.activation_functions import *
 from util.derivatives import *
+from util.loss_functions import *
 
 class MultiLayerPerceptron:
 
     def __init__(self, input_size, hidden_size, output_size, learning_rate=0.01, 
                  activation_function=sigmoid, 
-                 derivative_function=sigmoid_derivative):
+                 loss_function=mean_squared_error,
+                  weight_init='random'):
         
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
         self.learning_rate = learning_rate
         self.activation_function = activation_function
-        self.derivative_function = derivative_function
+        self.loss_function = loss_function
+        self.weight_init = weight_init
+
+        self._set_derivative_loss_function()
+        self._set_derivative_activation_function()
 
         # Inicializando os pesos e vieses
-        self.weights_input_hidden = np.random.uniform(-1, 1, (input_size, hidden_size))
-        self.weights_hidden_output = np.random.uniform(-1, 1, (hidden_size, output_size))
-        self.bias_hidden = np.random.uniform(-1, 1, (1, hidden_size))
-        self.bias_output = np.random.uniform(-1, 1, (1, output_size))
-        
+        self._initialize_weights()
+    
+    def _initialize_weights(self):
+        if self.weight_init == 'random':
+            self.weights_input_hidden = np.random.uniform(-1, 1, (self.input_size, self.hidden_size))
+            self.weights_hidden_output = np.random.uniform(-1, 1, (self.hidden_size, self.output_size))
+            self.bias_hidden = np.random.uniform(-1, 1, (1, self.hidden_size))
+            self.bias_output = np.random.uniform(-1, 1, (1, self.output_size))
+
+        elif self.weight_init == 'xavier':
+            limit_input_hidden = np.sqrt(6 / (self.input_size + self.hidden_size))
+            limit_hidden_output = np.sqrt(6 / (self.hidden_size + self.output_size))
+            self.weights_input_hidden = np.random.uniform(-limit_input_hidden, limit_input_hidden, 
+                                                          (self.input_size, self.hidden_size))
+            self.weights_hidden_output = np.random.uniform(-limit_hidden_output, limit_hidden_output, 
+                                                           (self.hidden_size, self.output_size))
+            self.bias_hidden = np.zeros((1, self.hidden_size))
+            self.bias_output = np.zeros((1, self.output_size))
+        else:
+            raise ValueError("Invalid weight initialization method. Use 'random' or 'xavier'.")
+    
+    def _set_derivative_loss_function(self):
+        loss_derivative_dict = {
+            mean_squared_error: mean_squared_error_derivative,
+            binary_cross_entropy: binary_cross_entropy_derivative
+        }
+
+        if self.loss_function in loss_derivative_dict:
+            self.loss_derivative = loss_derivative_dict[self.loss_function]
+        else:
+            raise ValueError("Unsupported loss function. Use mean_squared_error or binary_cross_entropy.")
+    
+    def _set_derivative_activation_function(self):
+        derivative_dict = {
+            sigmoid: sigmoid_derivative,
+            relu: relu_derivative,
+            tanh: tanh_derivative,
+            softmax: softmax_derivative
+        }
+
+        if self.activation_function in derivative_dict:
+            self.derivative_function = derivative_dict[self.activation_function]
+        else:
+            raise ValueError("Unsupported activation function. Use sigmoid, relu, tanh, or softmax.")
+
+
     def _feedforward(self, inputs):
 
         # 1. Calculando a entrada ponderada para a camada oculta (Z_oculta)
@@ -39,7 +86,7 @@ class MultiLayerPerceptron:
     
     def _backpropagation(self, inputs, targets):
         # 1. Calculando o erro na camada de saída
-        output_error = targets - self.output
+        output_error = self.loss_derivative(targets, self.output)
 
         # 2. Calculando o delta (gradiente local) da camada de saída
         output_delta = output_error * sigmoid_derivative(self.output_input) # Sigmoid sempre será a função de ativação da camada de saída pela natureza do problema ser binaria
@@ -82,8 +129,9 @@ class MultiLayerPerceptron:
                                  d_weights_hidden_output, d_bias_output)
             
             if epoch % 100 == 0:
-                loss = np.mean(np.square(y_train - output)) # Mean Squared Error
-                print(f"Epoch {epoch}, Loss: {loss:.4f}")
+                loss = self.loss_function(y_train, output)
+                accuracy = accuracy_function(y_train, output) * 100  # Convert to percentage
+                print(f"Epoch {epoch}, Loss: {loss:.6f}, Accuracy: {accuracy:.2f} %")
         
         print("=" * 30)
         print("Training completed.")

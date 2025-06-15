@@ -2,7 +2,9 @@ from util.multi_layer_perceptron import MultiLayerPerceptron
 from assets.assets import *
 
 mlp = MultiLayerPerceptron(input_size, hidden_size, output_size, learning_rate, 
-                           activation_function, derivative_function)
+                           activation_function=activation_function,
+                            loss_function= loss_function,
+                            weight_init=weight_init)
 
 # Treinamento do MLP
 mlp.train(X_train, Y_train, epochs)

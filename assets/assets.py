@@ -1,6 +1,7 @@
 import numpy as np
 from util.activation_functions import *
 from util.derivatives import *
+from util.loss_functions import *
 
 # Entradas normalizadas
 X_train = np.array([
@@ -32,6 +33,6 @@ hidden_size = 8
 learning_rate = 0.5
 epochs = 10000
 
-# Funções de ativação
-activation_function = tanh
-derivative_function = tanh_derivative
+activation_function = tanh  # 'sigmoid', 'relu', 'tanh', 'softmax'
+loss_function = mean_squared_error
+weight_init = 'xavier'  # 'xavier' or 'random'
